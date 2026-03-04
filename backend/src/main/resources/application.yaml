@@ -1,0 +1,12 @@
+spring:
+  application:
+    name: backend
+  profiles:
+    active: 'default'
+
+server:
+  port: 8181
+
+application:
+  cors:
+    allowed-origins: ${APPLICATION_CORS_ORIGINS:http://localhost:4200}
