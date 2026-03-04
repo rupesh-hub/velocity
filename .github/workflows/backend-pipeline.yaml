@@ -98,7 +98,7 @@ jobs:
         run: |
           COMPOSE_PATH="docker-compose/production/docker-compose.yaml"
           COMPOSE_PATH_DEFAULT="docker-compose/default/docker-compose.yaml"
-          IMAGE_NAME="${USER}/product-service:${VERSION}"
+          IMAGE_NAME="${USER}/backend-svc:${VERSION}"
           
           echo "Updating image to ${IMAGE_NAME}"
           yq -i ".services.backend-svc.image = \"$IMAGE_NAME\"" "$COMPOSE_PATH"
@@ -114,7 +114,7 @@ jobs:
           
           git add .
           git diff --staged --quiet || (
-            git commit -m "chore(product-service): deploy ${VERSION} [skip ci]" &&
+            git commit -m "chore(backend): deploy ${VERSION} [skip ci]" &&
             git pull --rebase origin main &&
             git push origin main
           )
