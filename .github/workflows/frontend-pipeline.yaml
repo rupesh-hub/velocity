@@ -49,7 +49,7 @@ jobs:
   update-deployments:
     name: Update GitOps Manifests
     runs-on: ubuntu-latest
-    needs: docker
+    needs: build
     permissions:
       contents: write
 
