@@ -19,18 +19,10 @@ docker network inspect notes
 docker run -d \
   -p 3306:3306 \
   --name mysql \
-  --network notes \
-  --env-file .env \
-  -v mysql_data:/var/lib/mysql \
-  --cpus="1.0" \
-  --memory="1g" \
-  --memory-swap="1g" \
-  --health-cmd="mysqladmin ping -h localhost -u root -p$MYSQL_ROOT_PASSWORD" \
-  --health-interval=10s \
-  --health-timeout=5s \
-  --health-retries=5 \
-  --health-start-period=30s \
-  mysql:8.0
+  --network velocity \
+  -e MYSQL_ROOT_PASSWORD=root \
+  -e MYSQL_DATABASE=velocity \
+  mysql:latest 
 ```
 
 #### 4. Run Backend Container
@@ -40,6 +32,7 @@ docker run -d \
   --name backend-svc \
    --network velocity \
     -e APPLICATION_CORS_ORIGINS=http://localhost:8080 \
+    -e SPRING_DATASOURCE_URL=jdbc:mysql://mysql:3306/velocity \
      rupesh1997/backend-svc:1.0.0
-docker run -d -p 8181:8181 --name backend-svc --network notes rupesh1997/backend-svc:1.0.0
+     
 ```

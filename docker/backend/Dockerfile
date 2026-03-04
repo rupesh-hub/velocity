@@ -16,9 +16,11 @@ WORKDIR /app
 COPY --from=build /build/target/backend-*.jar app.jar
 
 ARG ACTIVE_PROFILE=production
+
 ENV PROFILE=${ACTIVE_PROFILE}
+ENV DATABASE_URL=jdbc:mysql://mysql:3306/velocity
 
 EXPOSE 8181
 
 # Optimization: Using exec form and better memory management for Java 21
-ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=${PROFILE}", "app.jar"]
+ENTRYPOINT ["java", "-jar", "-Dspring.profiles.active=${PROFILE}", "-Dspring.datasource.url=${DATABASE_URL}", "app.jar"]

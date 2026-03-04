@@ -119,94 +119,94 @@ jobs:
             git push origin main
           )
 
-  # 4️⃣ DEPLOY TO G-CLOUD
-  #  deployment:
-  #    name: Deploy to VPS
-  #    runs-on: ubuntu-latest
-  #    needs: update-deployments
-  #
-  #    steps:
-  #      - name: Checkout GitOps repository
-  #        uses: actions/checkout@v4
-  #        with:
-  #          repository: rupesh-hub/velocity-gitops
-  #          ref: main
-  #          token: ${{ secrets.GIT_TOKEN }}
-  #
-  #      - name: Setup SSH
-  #        uses: webfactory/ssh-agent@v0.9.0
-  #        with:
-  #          ssh-private-key: ${{ secrets.SSH_TOKEN }}
-  #
-  #      - name: Create deployment folder
-  #        run: |
-  #          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "mkdir -p velocity"
-  #
-  #      - name: Copy docker compose files
-  #        run: |
-  #          scp -o StrictHostKeyChecking=no \
-  #            docker-compose/production/docker-compose.yaml \
-  #            docker-compose/production/common-config.yaml \
-  #            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:~/velocity/
-  #
-  #      - name: Create .env file
-  #        run: |
-  #          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "cat > velocity/.env <<EOL
-  #          ALLOWED_CORS_ORIGINS=${{ secrets.ALLOWED_CORS_ORIGINS }}
-  #          SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
-  #          EOL"
-  #
-  #      - name: Deploy containers
-  #        run: |
-  #          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "
-  #            cd velocity &&
-  #            echo 'Stopping existing containers...' &&
-  #            docker compose down &&
-  #            echo 'Pulling latest images...' &&
-  #            docker compose pull &&
-  #            echo 'Starting new containers...' &&
-  #            docker compose up -d --remove-orphans &&
-  #            echo 'Cleaning old images...' &&
-  #            docker image prune -f
-  #          "
+    # 4️⃣ DEPLOY TO G-CLOUD
+    deployment:
+      name: Deploy to VPS
+      runs-on: ubuntu-latest
+      needs: update-deployments
 
-  deployment:
-    name: Deploy to Google Cloud
-    runs-on: ubuntu-latest
-    needs: update-deployments
+      steps:
+        - name: Checkout GitOps repository
+          uses: actions/checkout@v4
+          with:
+            repository: rupesh-hub/velocity-gitops
+            ref: main
+            token: ${{ secrets.GIT_TOKEN }}
 
-    steps:
-      - name: Checkout GitOps repository
-        uses: actions/checkout@v4
-        with:
-          repository: rupesh-hub/velocity-gitops
-          ref: main
-          token: ${{ secrets.GIT_TOKEN }}
+        - name: Setup SSH
+          uses: webfactory/ssh-agent@v0.9.0
+          with:
+            ssh-private-key: ${{ secrets.SSH_TOKEN }}
 
-      - name: Setup SSH
-        uses: webfactory/ssh-agent@v0.9.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_TOKEN }}
+        - name: Create deployment folder
+          run: |
+            ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "mkdir -p velocity"
 
-      - name: Copy Helm charts to VPS
-        run: |
-          ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "mkdir -p ~/velocity"
-          
-          scp -o StrictHostKeyChecking=no -r ./charts \
-          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:~/velocity/
+        - name: Copy docker compose files
+          run: |
+            scp -o StrictHostKeyChecking=no \
+              docker-compose/production/docker-compose.yaml \
+              docker-compose/production/common-config.yaml \
+              ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:~/velocity/
 
-      - name: Deploy with Helm
-        run: |
-          ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "
-            cd ~/velocity &&
-          
-            # Create namespace if it doesn't exist
-            kubectl create namespace velocity --dry-run=client -o yaml | kubectl apply -f - &&
-          
-            # Deploy Helm chart
-            helm upgrade --install velocity ./charts \
-              --namespace velocity \
-              --create-namespace 
-          "
+        - name: Create .env file
+          run: |
+            ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "cat > velocity/.env <<EOL
+            ALLOWED_CORS_ORIGINS=${{ secrets.ALLOWED_CORS_ORIGINS }}
+            SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
+            EOL"
+
+        - name: Deploy containers
+          run: |
+            ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "
+              cd velocity &&
+              echo 'Stopping existing containers...' &&
+              docker compose down &&
+              echo 'Pulling latest images...' &&
+              docker compose pull &&
+              echo 'Starting new containers...' &&
+              docker compose up -d --remove-orphans &&
+              echo 'Cleaning old images...' &&
+              docker image prune -f
+            "
+
+#  deployment:
+#    name: Deploy to Google Cloud
+#    runs-on: ubuntu-latest
+#    needs: update-deployments
+#
+#    steps:
+#      - name: Checkout GitOps repository
+#        uses: actions/checkout@v4
+#        with:
+#          repository: rupesh-hub/velocity-gitops
+#          ref: main
+#          token: ${{ secrets.GIT_TOKEN }}
+#
+#      - name: Setup SSH
+#        uses: webfactory/ssh-agent@v0.9.0
+#        with:
+#          ssh-private-key: ${{ secrets.SSH_TOKEN }}
+#
+#      - name: Copy Helm charts to VPS
+#        run: |
+#          ssh -o StrictHostKeyChecking=no \
+#          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "mkdir -p ~/velocity"
+#
+#          scp -o StrictHostKeyChecking=no -r ./charts \
+#          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:~/velocity/
+#
+#      - name: Deploy with Helm
+#        run: |
+#          ssh -o StrictHostKeyChecking=no \
+#          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "
+#            cd ~/velocity &&
+#
+#            # Create namespace if it doesn't exist
+#            kubectl create namespace velocity --dry-run=client -o yaml | kubectl apply -f - &&
+#
+#            # Deploy Helm chart
+#            helm upgrade --install velocity ./charts \
+#              --namespace velocity \
+#              --create-namespace
+#          "

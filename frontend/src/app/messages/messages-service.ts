@@ -10,9 +10,9 @@ export class MessagesService {
 
   private http: HttpClient = inject(HttpClient);
 
-  public message = (): Observable<MessageResponse> => {
+  public message = (id:number): Observable<MessageResponse> => {
     return this.http.get<MessageResponse>(
-      `/messages`
+      `/messages/${id}`
     ).pipe(
       map(response => response),
       catchError(error => throwError(error))

@@ -1,4 +1,39 @@
 spring:
   config:
     activate:
-      on-profile: 'production'
+      on-profile: "production"
+
+  # Disable the feature that runs data.sql/schema.sql
+  sql:
+    init:
+      mode: never
+
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+
+  datasource:
+    url: ${SPRING_DATASOURCE_URL}
+    username: ${SPRING_DATASOURCE_USERNAME}
+    password: ${SPRING_DATASOURCE_PASSWORD}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    properties:
+      hibernate:
+        format_sql: false
+        jdbc.batch_size: 25
+        order_inserts: true
+        order_updates: true
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health, info, prometheus
+  endpoint:
+    health:
+      show-details: when_authorized

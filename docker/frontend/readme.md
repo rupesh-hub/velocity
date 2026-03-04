@@ -11,5 +11,9 @@ docker build \
 #### 2. Run Frontend Container
 
 ```shell
-docker run -d --name frontend-svc --network velocity -p 8080:8080 rupesh1997/frontend-svc:1.0.0
+docker run -d \
+ --name frontend-svc \
+  --network velocity \
+   -p 8080:8080 \
+    rupesh1997/frontend-svc:1.0.0
 ```
