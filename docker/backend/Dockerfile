@@ -9,6 +9,7 @@ RUN mvn clean package -DskipTests
 
 # Runtime stage
 FROM amazoncorretto:21-alpine
+RUN apk add --no-cache curl
 WORKDIR /app
 
 # Using a wildcard or specific name to avoid copy errors
