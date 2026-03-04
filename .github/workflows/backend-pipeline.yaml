@@ -123,7 +123,7 @@ jobs:
   deployment:
     name: Deploy to VPS
     runs-on: ubuntu-latest
-    needs: docker
+    needs: update-deployments
 
     steps:
       - name: Checkout GitOps repository
@@ -138,58 +138,23 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_TOKEN }}
 
-#      - name: Copy Helm charts to VPS
-#        run: |
-#          ssh -o StrictHostKeyChecking=no \
-#          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "mkdir -p ~/ecm"
-#
-#          scp -o StrictHostKeyChecking=no -r ./charts \
-#          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:~/ecm/
-#
-#      - name: Deploy with Helm
-#        run: |
-#          ssh -o StrictHostKeyChecking=no \
-#          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "
-#            cd ~/ecm &&
-#
-#            # Create namespace if it doesn't exist
-#            kubectl create namespace ecm --dry-run=client -o yaml | kubectl apply -f - &&
-#
-#            # Recreate git secret safely
-#            kubectl delete secret git-credentials -n ecm --ignore-not-found &&
-#            kubectl create secret generic git-credentials \
-#              --from-literal=username=${{ secrets.GIT_USERNAME }} \
-#              --from-literal=password=${{ secrets.CONFIG_GIT_TOKEN }} \
-#              -n ecm &&
-#
-#            # Deploy Helm chart
-#            helm upgrade --install ecm ./charts \
-#              --namespace ecm \
-#              --create-namespace
-#          "
-
       - name: Create deployment folder
         run: |
-          ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} \
-          "mkdir -p velocity"
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "mkdir -p velocity"
 
       - name: Copy docker compose files
         run: |
           scp -o StrictHostKeyChecking=no \
             docker-compose/production/docker-compose.yaml \
             docker-compose/production/common-config.yaml \
-            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:velocity/
+            ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }}:~/velocity/
 
       - name: Create .env file
         run: |
-          ssh -o StrictHostKeyChecking=no \
-          ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} <<EOF
-          cat > velocity/.env <<EOL
+          ssh -o StrictHostKeyChecking=no ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_IP }} "cat > velocity/.env <<EOL
           ALLOWED_CORS_ORIGINS=${{ secrets.ALLOWED_CORS_ORIGINS }}
           SPRING_PROFILES_ACTIVE=${{ secrets.SPRING_PROFILES_ACTIVE }}
-          EOL
-          EOF
+          EOL"
 
       - name: Deploy containers
         run: |
