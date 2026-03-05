@@ -71,5 +71,5 @@ import { MessageResponse } from './messages.model';
 })
 export class MessagesComponent {
   private _messagesService = inject(MessagesService);
-  protected message$: Observable<MessageResponse> = this._messagesService.message(1);
+  protected message$: Observable<MessageResponse> = this._messagesService.message(2);
 }
