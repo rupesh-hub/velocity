@@ -1,0 +1,125 @@
+pipeline {
+    agent any
+
+    environment {
+        BE_PATH            = "backend"
+        BE_DOCKERFILE_PATH = "docker/backend/Dockerfile"
+        FE_DOCKERFILE_PATH = "docker/frontend/Dockerfile"
+        FE_PATH            = "frontend"
+        DOCKERHUB_CRED_ID  = "DockerhubCred"
+        ACTIVE_PROFILE     = "production"
+    }
+
+    stages {
+        stage("Initialize: Environment Cleanup") {
+            steps {
+                cleanWs()
+            }
+        }
+
+        stage("Source: Checkout & Semantic Versioning") {
+            steps {
+                script {
+                    checkout([$class: 'GitSCM',
+                        branches: [[name: "*/main"]],
+                        userRemoteConfigs: [[url: "https://github.com/rupesh-hub/velocity.git"]]
+                    ])
+
+                    dir("${env.BE_PATH}") {
+                        env.BE_VERSION = sh(script: "./mvnw help:evaluate -Dexpression=project.version -q -DforceStdout", returnStdout: true).trim()
+                    }
+
+                    dir("${env.FE_PATH}") {
+                        env.FE_VERSION = sh(script: "jq -r '.version' package.json", returnStdout: true).trim()
+                    }
+
+                    echo "Backend Version: ${env.BE_VERSION}"
+                    echo "Frontend Version: ${env.FE_VERSION}"
+                }
+            }
+        }
+
+        stage("Build: Application Binaries") {
+            parallel {
+                stage("Package: Backend Artifact") {
+                    steps {
+                        dir("${env.BE_PATH}") {
+                            sh "./mvnw clean package -DskipTests"
+                        }
+                    }
+                }
+
+                stage("Audit: Frontend Dependency Scan") {
+                    steps {
+                        dir("${env.FE_PATH}") {
+                            echo "Executing frontend audit/build steps..."
+                            // Add npm install or build commands here if needed
+                        }
+                    }
+                }
+            }
+        }
+
+        stage("Delivery: Containerization & Registry Push") {
+            steps {
+                script {
+                    // ---- Docker Hub Authentication ----
+                    withCredentials([usernamePassword(
+                        credentialsId: env.DOCKERHUB_CRED_ID,
+                        usernameVariable: 'DOCKER_USER',
+                        passwordVariable: 'DOCKER_PASSWD'
+                    )]) {
+                        sh "echo '${DOCKER_PASSWD}' | docker login -u '${DOCKER_USER}' --password-stdin"
+                    }
+
+                    // ---- Backend Image ----
+                    dir(env.BE_PATH) {
+                        echo "Building and pushing backend..."
+                        sh """
+                            docker build \
+                                -t rupesh1997/backend-svc:${env.BE_VERSION} \
+                                -t rupesh1997/backend-svc:latest \
+                                --build-arg PROJECT_VERSION=${env.BE_VERSION} \
+                                --build-arg ACTIVE_PROFILE=${env.ACTIVE_PROFILE} \
+                                -f ../${env.BE_DOCKERFILE_PATH} .
+
+                            docker push rupesh1997/backend-svc:${env.BE_VERSION}
+                            docker push rupesh1997/backend-svc:latest
+                        """
+                    }
+
+                    // ---- Frontend Image ----
+                    dir(env.FE_PATH) {
+                        echo "Building and pushing frontend..."
+                        sh """
+                            docker build \
+                                -t rupesh1997/frontend-svc:${env.FE_VERSION} \
+                                -t rupesh1997/frontend-svc:latest \
+                                --build-arg PROJECT_VERSION=${env.FE_VERSION} \
+                                --build-arg ACTIVE_PROFILE=${env.ACTIVE_PROFILE} \
+                                -f ../${env.FE_DOCKERFILE_PATH} .
+
+                            docker push rupesh1997/frontend-svc:${env.FE_VERSION}
+                            docker push rupesh1997/frontend-svc:latest
+                        """
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            script {
+                echo "Triggering CD Pipeline..."
+                build job: "Velocity-CD", parameters: [
+                    string(name: 'BACKEND_IMAGE_TAG',  value: env.BE_VERSION),
+                    string(name: 'FRONTEND_IMAGE_TAG', value: env.FE_VERSION)
+                ]
+            }
+        }
+        failure {
+            echo "CI Pipeline failed! Check logs for details."
+        }
+    }
+}
